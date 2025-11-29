@@ -6,7 +6,7 @@ import typer
 from rich.prompt import Prompt
 
 from favro_cli.api.client import FavroAPIError, FavroAuthError, FavroClient
-from favro_cli.config import clear_credentials, get_credentials, get_organization_id, set_credentials
+from favro_cli.config import clear_credentials, get_credentials, get_organization_id, set_credentials, set_organization_id
 from favro_cli.state import state
 from favro_cli.output.formatters import (
     output_error,
@@ -46,7 +46,11 @@ def login(
         with FavroClient(email, token) as client:
             orgs = client.get_organizations()
             set_credentials(email, token)
-            output_success(f"Logged in successfully. You have access to {len(orgs)} organization(s).")
+            if len(orgs) == 1:
+                set_organization_id(orgs[0].organization_id)
+                output_success(f"Logged in successfully. Auto-selected organization: {orgs[0].name}")
+            else:
+                output_success(f"Logged in successfully. You have access to {len(orgs)} organization(s).")
     except FavroAuthError as e:
         output_error(e.message)
         raise typer.Exit(1)
