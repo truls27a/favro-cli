@@ -21,7 +21,8 @@ def output_json(data: BaseModel | Sequence[BaseModel] | dict[str, Any]) -> None:
     else:
         # It's a sequence
         json_data = [item.model_dump(by_alias=True) for item in data]
-    console.print(json.dumps(json_data, indent=2, default=str))
+    # Use print() instead of console.print() to avoid Rich word-wrapping
+    print(json.dumps(json_data, indent=2, default=str))
 
 
 def output_table(
