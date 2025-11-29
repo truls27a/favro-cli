@@ -1,7 +1,7 @@
 """Pydantic models for Favro API responses."""
 
 from datetime import datetime
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -80,7 +80,7 @@ class Column(BaseModel):
     organization_id: str = Field(alias="organizationId")
     widget_common_id: str = Field(alias="widgetCommonId")
     name: str
-    position: int
+    position: float
     card_count: int = Field(default=0, alias="cardCount")
     time_sum: int | None = Field(default=None, alias="timeSum")
     estimation_sum: float | None = Field(default=None, alias="estimationSum")
@@ -97,7 +97,7 @@ class CardCustomField(BaseModel):
     """Card custom field value."""
 
     custom_field_id: str = Field(alias="customFieldId")
-    value: str | int | float | list[str] | None = None
+    value: str | int | float | list[str] | dict[str, Any] | None = None
     total: float | None = None
     link: dict[str, str] | None = None
     members: list[str] | None = None
@@ -138,8 +138,8 @@ class Card(BaseModel):
     time_on_board: CardTimeOnBoard | None = Field(default=None, alias="timeOnBoard")
     todo_list_user_id: str | None = Field(default=None, alias="todoListUserId")
     todo_list_completed: bool | None = Field(default=None, alias="todoListCompleted")
-    list_position: int | None = Field(default=None, alias="listPosition")
-    sheet_position: int | None = Field(default=None, alias="sheetPosition")
+    list_position: float | None = Field(default=None, alias="listPosition")
+    sheet_position: float | None = Field(default=None, alias="sheetPosition")
 
 
 class Tag(BaseModel):
