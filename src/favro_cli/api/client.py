@@ -113,7 +113,11 @@ class FavroClient:
         if response.status_code == 204:
             return {}
 
-        return response.json()  # type: ignore[no-any-return]
+        data: dict[str, Any] = response.json()
+        # Check for error responses that come with 200 status
+        if "message" in data and len(data) == 1:
+            raise FavroAPIError(200, str(data["message"]))
+        return data
 
     def _get(
         self,

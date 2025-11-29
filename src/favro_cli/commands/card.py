@@ -253,9 +253,9 @@ def move(
         typer.Option("--column", "-c", help="Target column ID", prompt=True),
     ],
     board_id: Annotated[
-        str | None,
-        typer.Option("--board", "-b", help="Target board ID (if moving to different board)"),
-    ] = None,
+        str,
+        typer.Option("--board", "-b", help="Board ID (widgetCommonId)", prompt=True),
+    ],
 ) -> None:
     """Move a card to a different column."""
     try:
