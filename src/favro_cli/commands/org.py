@@ -16,6 +16,7 @@ from favro_cli.output.formatters import (
     output_success,
     output_table,
 )
+from favro_cli.resolvers import OrganizationResolver, ResolverError
 from favro_cli.state import state
 
 
@@ -78,7 +79,7 @@ def list_orgs() -> None:
 def select(
     organization_id: Annotated[
         str,
-        typer.Argument(help="Organization ID to select"),
+        typer.Argument(help="Organization ID or name"),
     ],
 ) -> None:
     """Select an organization as default."""
@@ -90,11 +91,15 @@ def select(
     email, token = creds
 
     try:
-        # Verify the org exists and user has access
-        with FavroClient(email, token, organization_id) as client:
-            org = client.get_organization(organization_id)
-            set_organization_id(organization_id)
+        # Resolve by ID or name
+        with FavroClient(email, token) as client:
+            resolver = OrganizationResolver(client)
+            org = resolver.resolve(organization_id)
+            set_organization_id(org.organization_id)
             output_success(f"Selected organization: {org.name}")
+    except ResolverError as e:
+        output_error(str(e))
+        raise typer.Exit(1)
     except FavroAuthError as e:
         output_error(e.message)
         raise typer.Exit(1)

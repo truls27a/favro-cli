@@ -9,6 +9,7 @@ from favro_cli.api.models import (
     Collection,
     Column,
     Organization,
+    Tag,
     User,
     Widget,
 )
@@ -412,3 +413,14 @@ class FavroClient:
         """Delete a card."""
         params = {"everywhere": "true"} if everywhere else None
         self._delete(f"/cards/{card_id}", params)
+
+    # Tag endpoints
+    def get_tags(self) -> list[Tag]:
+        """Get all tags in the organization."""
+        entities = self._paginate_all("/tags")
+        return [Tag.model_validate(e) for e in entities]
+
+    def get_tag(self, tag_id: str) -> Tag:
+        """Get a specific tag."""
+        data = self._get(f"/tags/{tag_id}")
+        return Tag.model_validate(data)

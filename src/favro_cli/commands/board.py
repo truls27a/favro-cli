@@ -15,6 +15,7 @@ from favro_cli.output.formatters import (
     output_panel,
     output_table,
 )
+from favro_cli.resolvers import BoardResolver, ResolverError
 from favro_cli.state import state
 
 
@@ -82,14 +83,15 @@ def list_boards(
 def show(
     board_id: Annotated[
         str,
-        typer.Argument(help="Board ID (widgetCommonId)"),
+        typer.Argument(help="Board ID or name"),
     ],
 ) -> None:
     """Show board details with columns and card counts."""
     try:
         with get_client() as client:
-            widget = client.get_widget(board_id)
-            columns = client.get_columns(board_id)
+            resolver = BoardResolver(client)
+            widget = resolver.resolve(board_id)
+            columns = client.get_columns(widget.widget_common_id)
 
             if state["json"]:
                 output_json({
@@ -121,6 +123,9 @@ def show(
                     ],
                     title="Columns",
                 )
+    except ResolverError as e:
+        output_error(str(e))
+        raise typer.Exit(1)
     except FavroAuthError as e:
         output_error(e.message)
         raise typer.Exit(1)
@@ -133,7 +138,7 @@ def show(
 def view(
     board_id: Annotated[
         str,
-        typer.Argument(help="Board ID (widgetCommonId)"),
+        typer.Argument(help="Board ID or name"),
     ],
     max_cards: Annotated[
         int,
@@ -149,9 +154,10 @@ def view(
         max_cards = 10000
     try:
         with get_client() as client:
-            widget = client.get_widget(board_id)
-            columns = client.get_columns(board_id)
-            cards = client.get_cards(widget_common_id=board_id)
+            resolver = BoardResolver(client)
+            widget = resolver.resolve(board_id)
+            columns = client.get_columns(widget.widget_common_id)
+            cards = client.get_cards(widget_common_id=widget.widget_common_id)
 
             if state["json"]:
                 output_json({
@@ -162,6 +168,9 @@ def view(
             else:
                 _render_board_view(widget.name, columns, cards, max_cards)
 
+    except ResolverError as e:
+        output_error(str(e))
+        raise typer.Exit(1)
     except FavroAuthError as e:
         output_error(e.message)
         raise typer.Exit(1)

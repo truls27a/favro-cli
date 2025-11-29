@@ -16,6 +16,14 @@ from favro_cli.output.formatters import (
     output_success,
     output_table,
 )
+from favro_cli.resolvers import (
+    BoardResolver,
+    CardResolver,
+    ColumnResolver,
+    ResolverError,
+    TagResolver,
+    UserResolver,
+)
 from favro_cli.state import state
 
 
@@ -43,11 +51,11 @@ def get_client() -> FavroClient:
 def list_cards(
     board_id: Annotated[
         str | None,
-        typer.Option("--board", "-b", help="Filter by board ID (widgetCommonId)"),
+        typer.Option("--board", "-b", help="Filter by board ID or name"),
     ] = None,
     column_id: Annotated[
         str | None,
-        typer.Option("--column", "-c", help="Filter by column ID"),
+        typer.Option("--column", "-c", help="Filter by column ID or name (requires --board for name)"),
     ] = None,
     collection_id: Annotated[
         str | None,
@@ -61,9 +69,23 @@ def list_cards(
 
     try:
         with get_client() as client:
+            # Resolve board if provided
+            resolved_board_id: str | None = None
+            if board_id:
+                board_resolver = BoardResolver(client)
+                board = board_resolver.resolve(board_id)
+                resolved_board_id = board.widget_common_id
+
+            # Resolve column if provided (requires board for name lookup)
+            resolved_column_id: str | None = None
+            if column_id:
+                column_resolver = ColumnResolver(client)
+                column = column_resolver.resolve(column_id, board_id=resolved_board_id)
+                resolved_column_id = column.column_id
+
             cards = client.get_cards(
-                widget_common_id=board_id,
-                column_id=column_id,
+                widget_common_id=resolved_board_id,
+                column_id=resolved_column_id,
                 collection_id=collection_id,
             )
 
@@ -80,6 +102,9 @@ def list_cards(
                     ],
                     title="Cards",
                 )
+    except ResolverError as e:
+        output_error(str(e))
+        raise typer.Exit(1)
     except FavroAuthError as e:
         output_error(e.message)
         raise typer.Exit(1)
@@ -92,18 +117,33 @@ def list_cards(
 def show(
     card_id: Annotated[
         str,
-        typer.Argument(help="Card ID"),
+        typer.Argument(help="Card ID, sequential ID (#123), or name"),
     ],
+    board_id: Annotated[
+        str | None,
+        typer.Option("--board", "-b", help="Board ID or name (narrows search scope)"),
+    ] = None,
 ) -> None:
     """Show detailed card information."""
     try:
         with get_client() as client:
-            card = client.get_card(card_id)
+            # Resolve board if provided
+            resolved_board_id: str | None = None
+            if board_id:
+                board_resolver = BoardResolver(client)
+                board = board_resolver.resolve(board_id)
+                resolved_board_id = board.widget_common_id
+
+            card_resolver = CardResolver(client)
+            card = card_resolver.resolve(card_id, board_id=resolved_board_id)
 
             if state["json"]:
                 output_json(card)
             else:
                 _render_card_detail(card)
+    except ResolverError as e:
+        output_error(str(e))
+        raise typer.Exit(1)
     except FavroAuthError as e:
         output_error(e.message)
         raise typer.Exit(1)
@@ -169,11 +209,11 @@ def create(
     ],
     board_id: Annotated[
         str | None,
-        typer.Option("--board", "-b", help="Board ID (widgetCommonId)"),
+        typer.Option("--board", "-b", help="Board ID or name"),
     ] = None,
     column_id: Annotated[
         str | None,
-        typer.Option("--column", "-c", help="Column ID"),
+        typer.Option("--column", "-c", help="Column ID or name (requires --board for name)"),
     ] = None,
     description: Annotated[
         str | None,
@@ -183,10 +223,24 @@ def create(
     """Create a new card."""
     try:
         with get_client() as client:
+            # Resolve board if provided
+            resolved_board_id: str | None = None
+            if board_id:
+                board_resolver = BoardResolver(client)
+                board = board_resolver.resolve(board_id)
+                resolved_board_id = board.widget_common_id
+
+            # Resolve column if provided (requires board for name lookup)
+            resolved_column_id: str | None = None
+            if column_id:
+                column_resolver = ColumnResolver(client)
+                column = column_resolver.resolve(column_id, board_id=resolved_board_id)
+                resolved_column_id = column.column_id
+
             card = client.create_card(
                 name=name,
-                widget_common_id=board_id,
-                column_id=column_id,
+                widget_common_id=resolved_board_id,
+                column_id=resolved_column_id,
                 detailed_description=description,
             )
 
@@ -194,6 +248,9 @@ def create(
                 output_json(card)
             else:
                 output_success(f"Created card #{card.sequential_id}: {card.name}")
+    except ResolverError as e:
+        output_error(str(e))
+        raise typer.Exit(1)
     except FavroAuthError as e:
         output_error(e.message)
         raise typer.Exit(1)
@@ -206,7 +263,7 @@ def create(
 def update(
     card_id: Annotated[
         str,
-        typer.Argument(help="Card ID"),
+        typer.Argument(help="Card ID, sequential ID (#123), or name"),
     ],
     name: Annotated[
         str | None,
@@ -216,6 +273,10 @@ def update(
         str | None,
         typer.Option("--description", "-d", help="New description"),
     ] = None,
+    board_id: Annotated[
+        str | None,
+        typer.Option("--board", "-b", help="Board ID or name (narrows search scope)"),
+    ] = None,
 ) -> None:
     """Update a card's properties."""
     if name is None and description is None:
@@ -224,8 +285,18 @@ def update(
 
     try:
         with get_client() as client:
+            # Resolve board if provided
+            resolved_board_id: str | None = None
+            if board_id:
+                board_resolver = BoardResolver(client)
+                board = board_resolver.resolve(board_id)
+                resolved_board_id = board.widget_common_id
+
+            card_resolver = CardResolver(client)
+            card = card_resolver.resolve(card_id, board_id=resolved_board_id)
+
             card = client.update_card(
-                card_id=card_id,
+                card_id=card.card_id,
                 name=name,
                 detailed_description=description,
             )
@@ -234,6 +305,9 @@ def update(
                 output_json(card)
             else:
                 output_success(f"Updated card #{card.sequential_id}: {card.name}")
+    except ResolverError as e:
+        output_error(str(e))
+        raise typer.Exit(1)
     except FavroAuthError as e:
         output_error(e.message)
         raise typer.Exit(1)
@@ -246,30 +320,46 @@ def update(
 def move(
     card_id: Annotated[
         str,
-        typer.Argument(help="Card ID"),
+        typer.Argument(help="Card ID, sequential ID (#123), or name"),
     ],
     column_id: Annotated[
         str,
-        typer.Option("--column", "-c", help="Target column ID", prompt=True),
+        typer.Option("--column", "-c", help="Target column ID or name", prompt=True),
     ],
     board_id: Annotated[
         str,
-        typer.Option("--board", "-b", help="Board ID (widgetCommonId)", prompt=True),
+        typer.Option("--board", "-b", help="Board ID or name", prompt=True),
     ],
 ) -> None:
     """Move a card to a different column."""
     try:
         with get_client() as client:
+            # Resolve board
+            board_resolver = BoardResolver(client)
+            board = board_resolver.resolve(board_id)
+            resolved_board_id = board.widget_common_id
+
+            # Resolve card
+            card_resolver = CardResolver(client)
+            card = card_resolver.resolve(card_id, board_id=resolved_board_id)
+
+            # Resolve column
+            column_resolver = ColumnResolver(client)
+            column = column_resolver.resolve(column_id, board_id=resolved_board_id)
+
             card = client.update_card(
-                card_id=card_id,
-                column_id=column_id,
-                widget_common_id=board_id,
+                card_id=card.card_id,
+                column_id=column.column_id,
+                widget_common_id=resolved_board_id,
             )
 
             if state["json"]:
                 output_json(card)
             else:
-                output_success(f"Moved card #{card.sequential_id} to column {column_id}")
+                output_success(f"Moved card #{card.sequential_id} to column '{column.name}'")
+    except ResolverError as e:
+        output_error(str(e))
+        raise typer.Exit(1)
     except FavroAuthError as e:
         output_error(e.message)
         raise typer.Exit(1)
@@ -282,15 +372,19 @@ def move(
 def assign(
     card_id: Annotated[
         str,
-        typer.Argument(help="Card ID"),
+        typer.Argument(help="Card ID, sequential ID (#123), or name"),
     ],
     user_id: Annotated[
         str | None,
-        typer.Option("--add", "-a", help="User ID to assign"),
+        typer.Option("--add", "-a", help="User ID, name, or email to assign"),
     ] = None,
     remove_user_id: Annotated[
         str | None,
-        typer.Option("--remove", "-r", help="User ID to unassign"),
+        typer.Option("--remove", "-r", help="User ID, name, or email to unassign"),
+    ] = None,
+    board_id: Annotated[
+        str | None,
+        typer.Option("--board", "-b", help="Board ID or name (narrows card search scope)"),
     ] = None,
 ) -> None:
     """Assign or unassign users to a card."""
@@ -300,11 +394,36 @@ def assign(
 
     try:
         with get_client() as client:
-            add_list = [user_id] if user_id else None
-            remove_list = [remove_user_id] if remove_user_id else None
+            # Resolve board if provided
+            resolved_board_id: str | None = None
+            if board_id:
+                board_resolver = BoardResolver(client)
+                board = board_resolver.resolve(board_id)
+                resolved_board_id = board.widget_common_id
+
+            # Resolve card
+            card_resolver = CardResolver(client)
+            card = card_resolver.resolve(card_id, board_id=resolved_board_id)
+
+            # Resolve users
+            user_resolver = UserResolver(client)
+            add_list: list[str] | None = None
+            remove_list: list[str] | None = None
+            add_user_name: str | None = None
+            remove_user_name: str | None = None
+
+            if user_id:
+                resolved_user = user_resolver.resolve(user_id)
+                add_list = [resolved_user.user_id]
+                add_user_name = resolved_user.name
+
+            if remove_user_id:
+                resolved_user = user_resolver.resolve(remove_user_id)
+                remove_list = [resolved_user.user_id]
+                remove_user_name = resolved_user.name
 
             card = client.update_card(
-                card_id=card_id,
+                card_id=card.card_id,
                 add_assignments=add_list,
                 remove_assignments=remove_list,
             )
@@ -312,10 +431,13 @@ def assign(
             if state["json"]:
                 output_json(card)
             else:
-                if user_id:
-                    output_success(f"Assigned {user_id} to card #{card.sequential_id}")
-                if remove_user_id:
-                    output_success(f"Unassigned {remove_user_id} from card #{card.sequential_id}")
+                if add_user_name:
+                    output_success(f"Assigned '{add_user_name}' to card #{card.sequential_id}")
+                if remove_user_name:
+                    output_success(f"Unassigned '{remove_user_name}' from card #{card.sequential_id}")
+    except ResolverError as e:
+        output_error(str(e))
+        raise typer.Exit(1)
     except FavroAuthError as e:
         output_error(e.message)
         raise typer.Exit(1)
@@ -328,15 +450,19 @@ def assign(
 def tag(
     card_id: Annotated[
         str,
-        typer.Argument(help="Card ID"),
+        typer.Argument(help="Card ID, sequential ID (#123), or name"),
     ],
     add_tag: Annotated[
         str | None,
-        typer.Option("--add", "-a", help="Tag ID to add"),
+        typer.Option("--add", "-a", help="Tag ID or name to add"),
     ] = None,
     remove_tag: Annotated[
         str | None,
-        typer.Option("--remove", "-r", help="Tag ID to remove"),
+        typer.Option("--remove", "-r", help="Tag ID or name to remove"),
+    ] = None,
+    board_id: Annotated[
+        str | None,
+        typer.Option("--board", "-b", help="Board ID or name (narrows card search scope)"),
     ] = None,
 ) -> None:
     """Add or remove tags from a card."""
@@ -346,11 +472,36 @@ def tag(
 
     try:
         with get_client() as client:
-            add_list = [add_tag] if add_tag else None
-            remove_list = [remove_tag] if remove_tag else None
+            # Resolve board if provided
+            resolved_board_id: str | None = None
+            if board_id:
+                board_resolver = BoardResolver(client)
+                board = board_resolver.resolve(board_id)
+                resolved_board_id = board.widget_common_id
+
+            # Resolve card
+            card_resolver = CardResolver(client)
+            card = card_resolver.resolve(card_id, board_id=resolved_board_id)
+
+            # Resolve tags
+            tag_resolver = TagResolver(client)
+            add_list: list[str] | None = None
+            remove_list: list[str] | None = None
+            add_tag_name: str | None = None
+            remove_tag_name: str | None = None
+
+            if add_tag:
+                resolved_tag = tag_resolver.resolve(add_tag)
+                add_list = [resolved_tag.tag_id]
+                add_tag_name = resolved_tag.name
+
+            if remove_tag:
+                resolved_tag = tag_resolver.resolve(remove_tag)
+                remove_list = [resolved_tag.tag_id]
+                remove_tag_name = resolved_tag.name
 
             card = client.update_card(
-                card_id=card_id,
+                card_id=card.card_id,
                 add_tags=add_list,
                 remove_tags=remove_list,
             )
@@ -358,10 +509,13 @@ def tag(
             if state["json"]:
                 output_json(card)
             else:
-                if add_tag:
-                    output_success(f"Added tag {add_tag} to card #{card.sequential_id}")
-                if remove_tag:
-                    output_success(f"Removed tag {remove_tag} from card #{card.sequential_id}")
+                if add_tag_name:
+                    output_success(f"Added tag '{add_tag_name}' to card #{card.sequential_id}")
+                if remove_tag_name:
+                    output_success(f"Removed tag '{remove_tag_name}' from card #{card.sequential_id}")
+    except ResolverError as e:
+        output_error(str(e))
+        raise typer.Exit(1)
     except FavroAuthError as e:
         output_error(e.message)
         raise typer.Exit(1)
@@ -374,8 +528,12 @@ def tag(
 def delete(
     card_id: Annotated[
         str,
-        typer.Argument(help="Card ID"),
+        typer.Argument(help="Card ID, sequential ID (#123), or name"),
     ],
+    board_id: Annotated[
+        str | None,
+        typer.Option("--board", "-b", help="Board ID or name (narrows card search scope)"),
+    ] = None,
     everywhere: Annotated[
         bool,
         typer.Option("--everywhere", "-e", help="Delete from all boards"),
@@ -386,15 +544,29 @@ def delete(
     ] = False,
 ) -> None:
     """Delete a card."""
-    if not force:
-        confirm = typer.confirm("Are you sure you want to delete this card?")
-        if not confirm:
-            raise typer.Abort()
-
     try:
         with get_client() as client:
-            client.delete_card(card_id, everywhere=everywhere)
-            output_success(f"Deleted card {card_id}")
+            # Resolve board if provided
+            resolved_board_id: str | None = None
+            if board_id:
+                board_resolver = BoardResolver(client)
+                board = board_resolver.resolve(board_id)
+                resolved_board_id = board.widget_common_id
+
+            # Resolve card
+            card_resolver = CardResolver(client)
+            card = card_resolver.resolve(card_id, board_id=resolved_board_id)
+
+            if not force:
+                confirm = typer.confirm(f"Are you sure you want to delete card #{card.sequential_id}: {card.name}?")
+                if not confirm:
+                    raise typer.Abort()
+
+            client.delete_card(card.card_id, everywhere=everywhere)
+            output_success(f"Deleted card #{card.sequential_id}: {card.name}")
+    except ResolverError as e:
+        output_error(str(e))
+        raise typer.Exit(1)
     except FavroAuthError as e:
         output_error(e.message)
         raise typer.Exit(1)
