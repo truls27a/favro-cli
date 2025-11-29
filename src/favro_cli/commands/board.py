@@ -96,6 +96,7 @@ def show(
             resolver = BoardResolver(client)
             widget = resolver.resolve(board_id)
             columns = client.get_columns(widget.widget_common_id)
+            columns = sorted(columns, key=lambda c: c.position)
 
             if state["json"]:
                 output_json({
