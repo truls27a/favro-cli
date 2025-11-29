@@ -51,11 +51,12 @@ def main(
 
 def _register_commands() -> None:
     """Register all sub-commands. Called at import time."""
-    from favro_cli.commands import auth, board, org
+    from favro_cli.commands import auth, board, card, org
 
     # Register sub-commands
     app.add_typer(org.app, name="org")
     app.add_typer(board.app, name="board")
+    app.add_typer(card.app, name="card")
 
     # Register top-level auth commands
     app.command()(auth.login)
