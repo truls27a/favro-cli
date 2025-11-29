@@ -66,8 +66,8 @@ def list_orgs() -> None:
                     ],
                     title="Organizations (* = selected)",
                 )
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
@@ -95,8 +95,8 @@ def select(
             org = client.get_organization(organization_id)
             set_organization_id(organization_id)
             output_success(f"Selected organization: {org.name}")
-    except FavroAuthError:
-        output_error("Invalid credentials or no access to this organization.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
@@ -126,8 +126,8 @@ def current() -> None:
                 output_json(org)
             else:
                 output_success(f"Current organization: {org.name} ({org.organization_id})")
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")

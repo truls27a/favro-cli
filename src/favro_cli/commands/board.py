@@ -70,8 +70,8 @@ def list_boards(
                     ],
                     title="Boards",
                 )
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
@@ -121,8 +121,8 @@ def show(
                     ],
                     title="Columns",
                 )
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
@@ -156,8 +156,8 @@ def view(
             else:
                 _render_board_view(widget.name, columns, cards, max_cards)
 
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")

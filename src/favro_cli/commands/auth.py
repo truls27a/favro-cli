@@ -44,8 +44,8 @@ def login(
             orgs = client.get_organizations()
             set_credentials(email, token)
             output_success(f"Logged in successfully. You have access to {len(orgs)} organization(s).")
-    except FavroAuthError:
-        output_error("Invalid credentials")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
@@ -118,8 +118,8 @@ def whoami() -> None:
                         ],
                         title="Current User",
                     )
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")

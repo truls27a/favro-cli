@@ -80,8 +80,8 @@ def list_cards(
                     ],
                     title="Cards",
                 )
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
@@ -104,8 +104,8 @@ def show(
                 output_json(card)
             else:
                 _render_card_detail(card)
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
@@ -194,8 +194,8 @@ def create(
                 output_json(card)
             else:
                 output_success(f"Created card #{card.sequential_id}: {card.name}")
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
@@ -234,8 +234,8 @@ def update(
                 output_json(card)
             else:
                 output_success(f"Updated card #{card.sequential_id}: {card.name}")
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
@@ -270,8 +270,8 @@ def move(
                 output_json(card)
             else:
                 output_success(f"Moved card #{card.sequential_id} to column {column_id}")
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
@@ -316,8 +316,8 @@ def assign(
                     output_success(f"Assigned {user_id} to card #{card.sequential_id}")
                 if remove_user_id:
                     output_success(f"Unassigned {remove_user_id} from card #{card.sequential_id}")
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
@@ -362,8 +362,8 @@ def tag(
                     output_success(f"Added tag {add_tag} to card #{card.sequential_id}")
                 if remove_tag:
                     output_success(f"Removed tag {remove_tag} from card #{card.sequential_id}")
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
@@ -395,8 +395,8 @@ def delete(
         with get_client() as client:
             client.delete_card(card_id, everywhere=everywhere)
             output_success(f"Deleted card {card_id}")
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")

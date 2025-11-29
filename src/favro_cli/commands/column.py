@@ -62,8 +62,8 @@ def list_columns(
                     ],
                     title="Columns",
                 )
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
@@ -98,8 +98,8 @@ def create(
                 output_json(column)
             else:
                 output_success(f"Created column: {column.name} (position {column.position})")
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
@@ -129,8 +129,8 @@ def rename(
                 output_json(column)
             else:
                 output_success(f"Renamed column to: {column.name}")
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
@@ -160,8 +160,8 @@ def move(
                 output_json(column)
             else:
                 output_success(f"Moved column '{column.name}' to position {column.position}")
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
@@ -191,8 +191,8 @@ def delete(
         with get_client() as client:
             client.delete_column(column_id)
             output_success(f"Deleted column {column_id}")
-    except FavroAuthError:
-        output_error("Invalid credentials. Please login again.")
+    except FavroAuthError as e:
+        output_error(e.message)
         raise typer.Exit(1)
     except FavroAPIError as e:
         output_error(f"API error: {e.message}")
