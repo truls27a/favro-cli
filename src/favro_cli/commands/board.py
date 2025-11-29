@@ -244,11 +244,11 @@ def _format_card_cell(card: Card) -> str:
     lines: list[str] = []
 
     # Card identifier and name
-    lines.append(f"[bold][#{card.sequential_id}][/bold] {card.name[:200]}")
+    lines.append(f"[bold]\\[#{card.sequential_id}][/bold] {card.name[:200]}")
 
     # Truncate name if too long
     if len(card.name) > 200:
-        lines[0] = f"[bold][#{card.sequential_id}][/bold] {card.name[:197]}..."
+        lines[0] = f"[bold]\\[#{card.sequential_id}][/bold] {card.name[:197]}..."
 
     # Show due date if set
     if card.due_date:
