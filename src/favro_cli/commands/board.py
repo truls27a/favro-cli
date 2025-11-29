@@ -19,7 +19,10 @@ from favro_cli.resolvers import BoardResolver, ResolverError
 from favro_cli.state import state
 
 
-app = typer.Typer(help="Board commands")
+app = typer.Typer(
+    help="Board commands",
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 console = Console()
 
 

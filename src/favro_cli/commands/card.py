@@ -27,7 +27,10 @@ from favro_cli.resolvers import (
 from favro_cli.state import state
 
 
-app = typer.Typer(help="Card commands")
+app = typer.Typer(
+    help="Card commands",
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 console = Console()
 
 

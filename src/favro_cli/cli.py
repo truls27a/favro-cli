@@ -11,6 +11,7 @@ app = typer.Typer(
     name="favro",
     help="CLI for Favro project management",
     no_args_is_help=True,
+    context_settings={"help_option_names": ["-h", "--help"]},
 )
 
 console = Console()

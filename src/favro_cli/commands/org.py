@@ -20,7 +20,10 @@ from favro_cli.resolvers import OrganizationResolver, ResolverError
 from favro_cli.state import state
 
 
-app = typer.Typer(help="Organization commands")
+app = typer.Typer(
+    help="Organization commands",
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 
 
 def get_client() -> FavroClient:

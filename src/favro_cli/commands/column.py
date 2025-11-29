@@ -16,7 +16,10 @@ from favro_cli.resolvers import BoardResolver, ColumnResolver, ResolverError
 from favro_cli.state import state
 
 
-app = typer.Typer(help="Column commands")
+app = typer.Typer(
+    help="Column commands",
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 
 
 def get_client() -> FavroClient:

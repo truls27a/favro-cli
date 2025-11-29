@@ -18,7 +18,10 @@ from favro_cli.output.formatters import (
 )
 
 
-app = typer.Typer(help="Authentication commands")
+app = typer.Typer(
+    help="Authentication commands",
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 
 
 @app.command()
