@@ -8,11 +8,12 @@ from rich.table import Table
 
 from favro_cli.api.client import FavroAPIError, FavroAuthError, FavroClient
 from favro_cli.api.models import Card, Column
-from favro_cli.config import get_credentials, get_organization_id
+from favro_cli.config import get_board_id, get_credentials, get_organization_id, set_board_id
 from favro_cli.output.formatters import (
     output_error,
     output_json,
     output_panel,
+    output_success,
     output_table,
 )
 from favro_cli.resolvers import BoardResolver, ResolverError
@@ -171,6 +172,59 @@ def view(
             else:
                 _render_board_view(widget.name, columns, cards, max_cards)
 
+    except ResolverError as e:
+        output_error(str(e))
+        raise typer.Exit(1)
+    except FavroAuthError as e:
+        output_error(e.message)
+        raise typer.Exit(1)
+    except FavroAPIError as e:
+        output_error(f"API error: {e.message}")
+        raise typer.Exit(1)
+
+
+@app.command()
+def select(
+    board_id: Annotated[
+        str,
+        typer.Argument(help="Board ID or name"),
+    ],
+) -> None:
+    """Select a board as default."""
+    try:
+        with get_client() as client:
+            resolver = BoardResolver(client)
+            board = resolver.resolve(board_id)
+            set_board_id(board.widget_common_id)
+            output_success(f"Selected board: {board.name}")
+    except ResolverError as e:
+        output_error(str(e))
+        raise typer.Exit(1)
+    except FavroAuthError as e:
+        output_error(e.message)
+        raise typer.Exit(1)
+    except FavroAPIError as e:
+        output_error(f"API error: {e.message}")
+        raise typer.Exit(1)
+
+
+@app.command()
+def current() -> None:
+    """Show the currently selected board."""
+    board_id = get_board_id()
+    if board_id is None:
+        output_error("No board selected. Run 'favro board select <id>' first.")
+        raise typer.Exit(1)
+
+    try:
+        with get_client() as client:
+            resolver = BoardResolver(client)
+            board = resolver.resolve(board_id)
+
+            if state["json"]:
+                output_json(board)
+            else:
+                output_success(f"Current board: {board.name} ({board.widget_common_id})")
     except ResolverError as e:
         output_error(str(e))
         raise typer.Exit(1)

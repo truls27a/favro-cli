@@ -13,6 +13,7 @@ class AuthConfig(TypedDict, total=False):
 
 class DefaultsConfig(TypedDict, total=False):
     organization_id: str
+    board_id: str
 
 
 class Config(TypedDict, total=False):
@@ -67,6 +68,9 @@ def load_config() -> Config:
         org_id_val: Any = defaults_dict.get("organization_id")
         if org_id_val is not None:
             defaults["organization_id"] = str(org_id_val)
+        board_id_val: Any = defaults_dict.get("board_id")
+        if board_id_val is not None:
+            defaults["board_id"] = str(board_id_val)
         if defaults:
             config["defaults"] = defaults
 
@@ -96,6 +100,8 @@ def save_config(config: Config) -> None:
         defaults = config["defaults"]
         if "organization_id" in defaults:
             lines.append(f'organization_id = "{defaults["organization_id"]}"')
+        if "board_id" in defaults:
+            lines.append(f'board_id = "{defaults["board_id"]}"')
         lines.append("")
 
     content = "\n".join(lines)
@@ -134,6 +140,22 @@ def set_organization_id(organization_id: str) -> None:
     if "defaults" not in config:
         config["defaults"] = {}
     config["defaults"]["organization_id"] = organization_id
+    save_config(config)
+
+
+def get_board_id() -> str | None:
+    """Get default board ID from config."""
+    config = load_config()
+    defaults = config.get("defaults", {})
+    return defaults.get("board_id")
+
+
+def set_board_id(board_id: str) -> None:
+    """Save default board ID to config."""
+    config = load_config()
+    if "defaults" not in config:
+        config["defaults"] = {}
+    config["defaults"]["board_id"] = board_id
     save_config(config)
 
 

@@ -5,7 +5,7 @@ from typing import Annotated
 import typer
 
 from favro_cli.api.client import FavroAPIError, FavroAuthError, FavroClient
-from favro_cli.config import get_credentials, get_organization_id
+from favro_cli.config import get_board_id, get_credentials, get_organization_id
 from favro_cli.output.formatters import (
     output_error,
     output_json,
@@ -41,15 +41,24 @@ def get_client() -> FavroClient:
 @app.command("list")
 def list_columns(
     board_id: Annotated[
-        str,
-        typer.Option("--board", "-b", help="Board ID or name", prompt=True),
-    ],
+        str | None,
+        typer.Option("--board", "-b", help="Board ID or name"),
+    ] = None,
 ) -> None:
     """List columns for a board."""
+    # Use default board if not specified
+    effective_board_id = board_id or get_board_id()
+
+    if not effective_board_id:
+        output_error(
+            "Board is required. Use --board or set a default with 'favro board select <id>'."
+        )
+        raise typer.Exit(1)
+
     try:
         with get_client() as client:
             board_resolver = BoardResolver(client)
-            board = board_resolver.resolve(board_id)
+            board = board_resolver.resolve(effective_board_id)
             columns = client.get_columns(board.widget_common_id)
 
             # Sort by position
@@ -86,19 +95,28 @@ def create(
         typer.Argument(help="Column name"),
     ],
     board_id: Annotated[
-        str,
-        typer.Option("--board", "-b", help="Board ID or name", prompt=True),
-    ],
+        str | None,
+        typer.Option("--board", "-b", help="Board ID or name"),
+    ] = None,
     position: Annotated[
         int | None,
         typer.Option("--position", "-p", help="Column position (0-indexed)"),
     ] = None,
 ) -> None:
     """Create a new column on a board."""
+    # Use default board if not specified
+    effective_board_id = board_id or get_board_id()
+
+    if not effective_board_id:
+        output_error(
+            "Board is required. Use --board or set a default with 'favro board select <id>'."
+        )
+        raise typer.Exit(1)
+
     try:
         with get_client() as client:
             board_resolver = BoardResolver(client)
-            board = board_resolver.resolve(board_id)
+            board = board_resolver.resolve(effective_board_id)
             column = client.create_column(
                 widget_common_id=board.widget_common_id,
                 name=name,
@@ -136,13 +154,16 @@ def rename(
     ] = None,
 ) -> None:
     """Rename a column."""
+    # Use default board if not specified
+    effective_board_id = board_id or get_board_id()
+
     try:
         with get_client() as client:
             # Resolve board first if provided (needed for column name lookup)
             resolved_board_id: str | None = None
-            if board_id:
+            if effective_board_id:
                 board_resolver = BoardResolver(client)
-                board = board_resolver.resolve(board_id)
+                board = board_resolver.resolve(effective_board_id)
                 resolved_board_id = board.widget_common_id
 
             column_resolver = ColumnResolver(client)
@@ -184,13 +205,16 @@ def move(
     ] = None,
 ) -> None:
     """Move a column to a different position."""
+    # Use default board if not specified
+    effective_board_id = board_id or get_board_id()
+
     try:
         with get_client() as client:
             # Resolve board first if provided (needed for column name lookup)
             resolved_board_id: str | None = None
-            if board_id:
+            if effective_board_id:
                 board_resolver = BoardResolver(client)
-                board = board_resolver.resolve(board_id)
+                board = board_resolver.resolve(effective_board_id)
                 resolved_board_id = board.widget_common_id
 
             column_resolver = ColumnResolver(client)
@@ -232,6 +256,9 @@ def delete(
     ] = False,
 ) -> None:
     """Delete a column and all its cards."""
+    # Use default board if not specified
+    effective_board_id = board_id or get_board_id()
+
     if not force:
         confirm = typer.confirm(
             "Are you sure? This will delete the column and all its cards."
@@ -243,9 +270,9 @@ def delete(
         with get_client() as client:
             # Resolve board first if provided (needed for column name lookup)
             resolved_board_id: str | None = None
-            if board_id:
+            if effective_board_id:
                 board_resolver = BoardResolver(client)
-                board = board_resolver.resolve(board_id)
+                board = board_resolver.resolve(effective_board_id)
                 resolved_board_id = board.widget_common_id
 
             column_resolver = ColumnResolver(client)

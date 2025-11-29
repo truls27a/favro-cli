@@ -8,7 +8,7 @@ from rich.panel import Panel
 
 from favro_cli.api.client import FavroAPIError, FavroAuthError, FavroClient
 from favro_cli.api.models import Card
-from favro_cli.config import get_credentials, get_organization_id
+from favro_cli.config import get_board_id, get_credentials, get_organization_id
 from favro_cli.output.formatters import (
     output_error,
     output_json,
@@ -68,9 +68,13 @@ def list_cards(
     ] = None,
 ) -> None:
     """List cards with optional filters."""
-    if not board_id and not column_id and not collection_id:
+    # Use default board if not specified
+    effective_board_id = board_id or get_board_id()
+
+    if not effective_board_id and not column_id and not collection_id:
         output_error(
-            "At least one filter is required: --board, --column, or --collection"
+            "At least one filter is required: --board, --column, or --collection. "
+            "Or set a default board with 'favro board select <id>'."
         )
         raise typer.Exit(1)
 
@@ -78,9 +82,9 @@ def list_cards(
         with get_client() as client:
             # Resolve board if provided
             resolved_board_id: str | None = None
-            if board_id:
+            if effective_board_id:
                 board_resolver = BoardResolver(client)
-                board = board_resolver.resolve(board_id)
+                board = board_resolver.resolve(effective_board_id)
                 resolved_board_id = board.widget_common_id
 
             # Resolve column if provided (requires board for name lookup)
@@ -132,13 +136,16 @@ def show(
     ] = None,
 ) -> None:
     """Show detailed card information."""
+    # Use default board if not specified
+    effective_board_id = board_id or get_board_id()
+
     try:
         with get_client() as client:
             # Resolve board if provided
             resolved_board_id: str | None = None
-            if board_id:
+            if effective_board_id:
                 board_resolver = BoardResolver(client)
-                board = board_resolver.resolve(board_id)
+                board = board_resolver.resolve(effective_board_id)
                 resolved_board_id = board.widget_common_id
 
             card_resolver = CardResolver(client)
@@ -284,13 +291,16 @@ def create(
     ] = None,
 ) -> None:
     """Create a new card."""
+    # Use default board if not specified
+    effective_board_id = board_id or get_board_id()
+
     try:
         with get_client() as client:
             # Resolve board if provided
             resolved_board_id: str | None = None
-            if board_id:
+            if effective_board_id:
                 board_resolver = BoardResolver(client)
-                board = board_resolver.resolve(board_id)
+                board = board_resolver.resolve(effective_board_id)
                 resolved_board_id = board.widget_common_id
 
             # Resolve column if provided (requires board for name lookup)
@@ -346,13 +356,16 @@ def update(
         output_error("At least one of --name or --description must be provided")
         raise typer.Exit(1)
 
+    # Use default board if not specified
+    effective_board_id = board_id or get_board_id()
+
     try:
         with get_client() as client:
             # Resolve board if provided
             resolved_board_id: str | None = None
-            if board_id:
+            if effective_board_id:
                 board_resolver = BoardResolver(client)
-                board = board_resolver.resolve(board_id)
+                board = board_resolver.resolve(effective_board_id)
                 resolved_board_id = board.widget_common_id
 
             card_resolver = CardResolver(client)
@@ -390,16 +403,25 @@ def move(
         typer.Option("--column", "-c", help="Target column ID or name", prompt=True),
     ],
     board_id: Annotated[
-        str,
-        typer.Option("--board", "-b", help="Board ID or name", prompt=True),
-    ],
+        str | None,
+        typer.Option("--board", "-b", help="Board ID or name"),
+    ] = None,
 ) -> None:
     """Move a card to a different column."""
+    # Use default board if not specified
+    effective_board_id = board_id or get_board_id()
+
+    if not effective_board_id:
+        output_error(
+            "Board is required. Use --board or set a default with 'favro board select <id>'."
+        )
+        raise typer.Exit(1)
+
     try:
         with get_client() as client:
             # Resolve board
             board_resolver = BoardResolver(client)
-            board = board_resolver.resolve(board_id)
+            board = board_resolver.resolve(effective_board_id)
             resolved_board_id = board.widget_common_id
 
             # Resolve card
@@ -459,13 +481,16 @@ def assign(
         output_error("Either --add or --remove must be provided")
         raise typer.Exit(1)
 
+    # Use default board if not specified
+    effective_board_id = board_id or get_board_id()
+
     try:
         with get_client() as client:
             # Resolve board if provided
             resolved_board_id: str | None = None
-            if board_id:
+            if effective_board_id:
                 board_resolver = BoardResolver(client)
-                board = board_resolver.resolve(board_id)
+                board = board_resolver.resolve(effective_board_id)
                 resolved_board_id = board.widget_common_id
 
             # Resolve card
@@ -543,13 +568,16 @@ def tag(
         output_error("Either --add or --remove must be provided")
         raise typer.Exit(1)
 
+    # Use default board if not specified
+    effective_board_id = board_id or get_board_id()
+
     try:
         with get_client() as client:
             # Resolve board if provided
             resolved_board_id: str | None = None
-            if board_id:
+            if effective_board_id:
                 board_resolver = BoardResolver(client)
-                board = board_resolver.resolve(board_id)
+                board = board_resolver.resolve(effective_board_id)
                 resolved_board_id = board.widget_common_id
 
             # Resolve card
@@ -623,13 +651,16 @@ def delete(
     ] = False,
 ) -> None:
     """Delete a card."""
+    # Use default board if not specified
+    effective_board_id = board_id or get_board_id()
+
     try:
         with get_client() as client:
             # Resolve board if provided
             resolved_board_id: str | None = None
-            if board_id:
+            if effective_board_id:
                 board_resolver = BoardResolver(client)
-                board = board_resolver.resolve(board_id)
+                board = board_resolver.resolve(effective_board_id)
                 resolved_board_id = board.widget_common_id
 
             # Resolve card
