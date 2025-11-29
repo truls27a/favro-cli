@@ -5,6 +5,8 @@ from typing import Annotated, Optional
 import typer
 from rich.console import Console
 
+from favro_cli.state import state
+
 app = typer.Typer(
     name="favro",
     help="CLI for Favro project management",
@@ -12,9 +14,6 @@ app = typer.Typer(
 )
 
 console = Console()
-
-# Global state for JSON output mode
-state: dict[str, bool] = {"json": False}
 
 
 def version_callback(value: bool) -> None:
@@ -48,3 +47,19 @@ def main(
 ) -> None:
     """Favro CLI - Manage your Favro boards from the command line."""
     state["json"] = json_output
+
+
+def _register_commands() -> None:
+    """Register all sub-commands. Called at import time."""
+    from favro_cli.commands import auth, org
+
+    # Register sub-commands
+    app.add_typer(org.app, name="org")
+
+    # Register top-level auth commands
+    app.command()(auth.login)
+    app.command()(auth.logout)
+    app.command()(auth.whoami)
+
+
+_register_commands()
