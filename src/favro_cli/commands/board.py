@@ -138,9 +138,15 @@ def view(
     max_cards: Annotated[
         int,
         typer.Option("--max-cards", "-m", help="Max cards to show per column"),
-    ] = 5,
+    ] = 10,
+    show_all: Annotated[
+        bool,
+        typer.Option("--all", "-a", help="Show all cards (no limit)"),
+    ] = False,
 ) -> None:
     """View board with cards in a Kanban-style layout."""
+    if show_all:
+        max_cards = 10000
     try:
         with get_client() as client:
             widget = client.get_widget(board_id)
@@ -194,7 +200,7 @@ def _render_board_view(
     # Add column headers
     for col in sorted_columns:
         card_count = len(cards_by_column.get(col.column_id, []))
-        table.add_column(f"{col.name} ({card_count})", width=25)
+        table.add_column(f"{col.name} ({card_count})", width=200)
 
     # Determine max rows needed
     max_rows = max(
@@ -238,11 +244,11 @@ def _format_card_cell(card: Card) -> str:
     lines: list[str] = []
 
     # Card identifier and name
-    lines.append(f"[bold][#{card.sequential_id}][/bold] {card.name[:20]}")
+    lines.append(f"[bold][#{card.sequential_id}][/bold] {card.name[:200]}")
 
     # Truncate name if too long
-    if len(card.name) > 20:
-        lines[0] = f"[bold][#{card.sequential_id}][/bold] {card.name[:17]}..."
+    if len(card.name) > 200:
+        lines[0] = f"[bold][#{card.sequential_id}][/bold] {card.name[:197]}..."
 
     # Show due date if set
     if card.due_date:
