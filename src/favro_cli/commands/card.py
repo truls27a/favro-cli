@@ -102,7 +102,7 @@ def list_cards(
                     ],
                     title="Cards",
                 )
-    except ResolverError as e:
+    except (ResolverError, ValueError) as e:
         output_error(str(e))
         raise typer.Exit(1)
     except FavroAuthError as e:
@@ -141,7 +141,7 @@ def show(
                 output_json(card)
             else:
                 _render_card_detail(card)
-    except ResolverError as e:
+    except (ResolverError, ValueError) as e:
         output_error(str(e))
         raise typer.Exit(1)
     except FavroAuthError as e:
@@ -248,7 +248,7 @@ def create(
                 output_json(card)
             else:
                 output_success(f"Created card #{card.sequential_id}: {card.name}")
-    except ResolverError as e:
+    except (ResolverError, ValueError) as e:
         output_error(str(e))
         raise typer.Exit(1)
     except FavroAuthError as e:
@@ -305,7 +305,7 @@ def update(
                 output_json(card)
             else:
                 output_success(f"Updated card #{card.sequential_id}: {card.name}")
-    except ResolverError as e:
+    except (ResolverError, ValueError) as e:
         output_error(str(e))
         raise typer.Exit(1)
     except FavroAuthError as e:
@@ -357,7 +357,7 @@ def move(
                 output_json(card)
             else:
                 output_success(f"Moved card #{card.sequential_id} to column '{column.name}'")
-    except ResolverError as e:
+    except (ResolverError, ValueError) as e:
         output_error(str(e))
         raise typer.Exit(1)
     except FavroAuthError as e:
@@ -435,7 +435,7 @@ def assign(
                     output_success(f"Assigned '{add_user_name}' to card #{card.sequential_id}")
                 if remove_user_name:
                     output_success(f"Unassigned '{remove_user_name}' from card #{card.sequential_id}")
-    except ResolverError as e:
+    except (ResolverError, ValueError) as e:
         output_error(str(e))
         raise typer.Exit(1)
     except FavroAuthError as e:
@@ -513,7 +513,7 @@ def tag(
                     output_success(f"Added tag '{add_tag_name}' to card #{card.sequential_id}")
                 if remove_tag_name:
                     output_success(f"Removed tag '{remove_tag_name}' from card #{card.sequential_id}")
-    except ResolverError as e:
+    except (ResolverError, ValueError) as e:
         output_error(str(e))
         raise typer.Exit(1)
     except FavroAuthError as e:
@@ -564,7 +564,7 @@ def delete(
 
             client.delete_card(card.card_id, everywhere=everywhere)
             output_success(f"Deleted card #{card.sequential_id}: {card.name}")
-    except ResolverError as e:
+    except (ResolverError, ValueError) as e:
         output_error(str(e))
         raise typer.Exit(1)
     except FavroAuthError as e:

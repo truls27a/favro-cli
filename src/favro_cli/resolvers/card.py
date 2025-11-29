@@ -48,12 +48,12 @@ class CardResolver(BaseResolver[Card]):
 
         Supports:
         - Card ID (alphanumeric)
-        - Sequential ID (#123 or 123)
-        - Card name
+        - Sequential ID (#123 or 123) - requires board_id
+        - Card name - requires board_id
 
         Args:
             identifier: Card ID, sequential ID, or name
-            board_id: Optional board ID to narrow search scope
+            board_id: Board ID required for sequential ID or name lookup
 
         Returns:
             The resolved card
@@ -61,10 +61,15 @@ class CardResolver(BaseResolver[Card]):
         Raises:
             NotFoundError: Card not found
             AmbiguousMatchError: Multiple cards match
+            ValueError: Missing board_id for sequential ID/name lookup
         """
         # Check if it's a sequential ID
         seq_id = self._parse_sequential_id(identifier)
         if seq_id is not None:
+            if board_id is None:
+                raise ValueError(
+                    f"Looking up card by sequential ID (#{seq_id}) requires --board option"
+                )
             # Search by sequential ID
             cards = self._fetch_all(board_id=board_id)
             matches = [c for c in cards if c.sequential_id == seq_id]
@@ -81,5 +86,29 @@ class CardResolver(BaseResolver[Card]):
                 ]
                 raise AmbiguousMatchError(self.entity_type, identifier, match_info)
 
-        # Fall back to base resolver (ID then name)
-        return super().resolve(identifier, board_id=board_id, **context)
+        # Try direct ID lookup first
+        try:
+            entity = self._fetch_by_id(identifier)
+            if entity is not None:
+                return entity
+        except Exception:
+            pass  # Not a valid ID, try name lookup
+
+        # Name lookup requires board_id
+        if board_id is None:
+            raise ValueError(
+                f"Card '{identifier}' not found by ID. "
+                "To search by name, provide --board option"
+            )
+
+        # Fall back to name search
+        cards = self._fetch_all(board_id=board_id)
+        matches = [c for c in cards if self._get_name(c).lower() == identifier.lower()]
+
+        if len(matches) == 0:
+            raise NotFoundError(self.entity_type, identifier)
+        elif len(matches) == 1:
+            return matches[0]
+        else:
+            match_info = [(self._get_id(c), self._get_name(c)) for c in matches]
+            raise AmbiguousMatchError(self.entity_type, identifier, match_info)
