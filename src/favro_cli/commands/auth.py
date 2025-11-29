@@ -6,13 +6,15 @@ import typer
 from rich.prompt import Prompt
 
 from favro_cli.api.client import FavroAPIError, FavroAuthError, FavroClient
-from favro_cli.config import clear_credentials, get_credentials, set_credentials
+from favro_cli.config import clear_credentials, get_credentials, get_organization_id, set_credentials
 from favro_cli.state import state
 from favro_cli.output.formatters import (
     output_error,
+    output_info,
     output_json,
     output_panel,
     output_success,
+    output_table,
 )
 
 
@@ -39,9 +41,9 @@ def login(
     # Validate credentials by making an API call
     try:
         with FavroClient(email, token) as client:
-            user = client.get_user("me")
+            orgs = client.get_organizations()
             set_credentials(email, token)
-            output_success(f"Logged in as {user.name} ({user.email})")
+            output_success(f"Logged in successfully. You have access to {len(orgs)} organization(s).")
     except FavroAuthError:
         output_error("Invalid credentials")
         raise typer.Exit(1)
@@ -71,23 +73,51 @@ def whoami() -> None:
         raise typer.Exit(1)
 
     email, token = creds
+    org_id = get_organization_id()
 
     try:
-        with FavroClient(email, token) as client:
-            user = client.get_user("me")
+        if org_id is None:
+            # No org selected - show email and list accessible orgs
+            with FavroClient(email, token) as client:
+                orgs = client.get_organizations()
 
-            if state["json"]:
-                output_json(user)
-            else:
-                output_panel(
-                    user,
-                    [
-                        ("user_id", "User ID"),
-                        ("name", "Name"),
-                        ("email", "Email"),
-                    ],
-                    title="Current User",
-                )
+                if state["json"]:
+                    output_json({"email": email, "organizations": [o.model_dump(by_alias=True) for o in orgs]})
+                else:
+                    output_info(f"[bold]Email:[/bold] {email}")
+                    output_info("[bold]Organization:[/bold] [dim]None selected[/dim]")
+                    output_info("")
+                    output_table(
+                        orgs,
+                        [
+                            ("organization_id", "Organization ID"),
+                            ("name", "Name"),
+                        ],
+                        title="Accessible Organizations",
+                    )
+        else:
+            # Org selected - fetch users and find current user by email
+            with FavroClient(email, token, org_id) as client:
+                users = client.get_users()
+                current_user = next((u for u in users if u.email == email), None)
+
+                if current_user is None:
+                    output_error(f"Could not find user with email {email} in this organization.")
+                    raise typer.Exit(1)
+
+                if state["json"]:
+                    output_json(current_user)
+                else:
+                    output_panel(
+                        current_user,
+                        [
+                            ("user_id", "User ID"),
+                            ("name", "Name"),
+                            ("email", "Email"),
+                            ("organization_role", "Role"),
+                        ],
+                        title="Current User",
+                    )
     except FavroAuthError:
         output_error("Invalid credentials. Please login again.")
         raise typer.Exit(1)
