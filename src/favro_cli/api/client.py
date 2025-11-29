@@ -393,9 +393,9 @@ class FavroClient:
         if lane_id is not None:
             data["laneId"] = lane_id
         if add_tags:
-            data["addTags"] = add_tags
+            data["addTagIds"] = add_tags
         if remove_tags:
-            data["removeTags"] = remove_tags
+            data["removeTagIds"] = remove_tags
         if start_date is not None:
             data["startDate"] = start_date
         if due_date is not None:
