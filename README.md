@@ -5,7 +5,7 @@ Command line interface for Favro project management.
 ## Installation
 
 ```bash
-pip install git+https://github.com/truls27a/favro-cli.git
+pip install favro-cli
 ```
 
 ## Usage
