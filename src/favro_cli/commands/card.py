@@ -436,6 +436,7 @@ def move(
                 card_id=card.card_id,
                 column_id=column.column_id,
                 widget_common_id=resolved_board_id,
+                list_position=0,
             )
 
             if state["json"]:

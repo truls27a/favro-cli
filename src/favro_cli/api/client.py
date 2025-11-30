@@ -379,6 +379,7 @@ class FavroClient:
         add_assignments: list[str] | None = None,
         remove_assignments: list[str] | None = None,
         archived: bool | None = None,
+        list_position: float | None = None,
     ) -> Card:
         """Update a card."""
         data: dict[str, Any] = {}
@@ -406,6 +407,8 @@ class FavroClient:
             data["removeAssignmentIds"] = remove_assignments
         if archived is not None:
             data["archive"] = archived
+        if list_position is not None:
+            data["listPosition"] = list_position
         result = self._put(f"/cards/{card_id}", data)
         return Card.model_validate(result)
 
