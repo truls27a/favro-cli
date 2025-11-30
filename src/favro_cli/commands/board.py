@@ -86,15 +86,22 @@ def list_boards(
 @app.command()
 def show(
     board_id: Annotated[
-        str,
-        typer.Argument(help="Board ID or name"),
-    ],
+        str | None,
+        typer.Argument(help="Board ID or name (uses default if not specified)"),
+    ] = None,
 ) -> None:
     """Show board details with columns and card counts."""
+    # Use default board if not specified
+    effective_board_id = board_id or get_board_id()
+
+    if not effective_board_id:
+        output_error("No board specified and no default set. Run 'favro board select <id>' first.")
+        raise typer.Exit(1)
+
     try:
         with get_client() as client:
             resolver = BoardResolver(client)
-            widget = resolver.resolve(board_id)
+            widget = resolver.resolve(effective_board_id)
             columns = client.get_columns(widget.widget_common_id)
             columns = sorted(columns, key=lambda c: c.position)
 
@@ -142,9 +149,9 @@ def show(
 @app.command()
 def view(
     board_id: Annotated[
-        str,
-        typer.Argument(help="Board ID or name"),
-    ],
+        str | None,
+        typer.Argument(help="Board ID or name (uses default if not specified)"),
+    ] = None,
     max_cards: Annotated[
         int,
         typer.Option("--max-cards", "-m", help="Max cards to show per column"),
@@ -155,12 +162,19 @@ def view(
     ] = False,
 ) -> None:
     """View board with cards in a Kanban-style layout."""
+    # Use default board if not specified
+    effective_board_id = board_id or get_board_id()
+
+    if not effective_board_id:
+        output_error("No board specified and no default set. Run 'favro board select <id>' first.")
+        raise typer.Exit(1)
+
     if show_all:
         max_cards = 10000
     try:
         with get_client() as client:
             resolver = BoardResolver(client)
-            widget = resolver.resolve(board_id)
+            widget = resolver.resolve(effective_board_id)
             columns = client.get_columns(widget.widget_common_id)
             cards = client.get_cards(widget_common_id=widget.widget_common_id)
 
