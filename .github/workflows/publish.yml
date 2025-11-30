@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
-      id-token: write  # Required for trusted publishing
+      id-token: write # Required for trusted publishing
     steps:
       - uses: actions/checkout@v4
 
