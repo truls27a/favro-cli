@@ -42,3 +42,6 @@ uv.lock
 
 # OS
 .DS_Store
+
+# Favro API docs
+favro-api-documentation.html
