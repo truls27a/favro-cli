@@ -6,23 +6,14 @@ import typer
 from rich.console import Console
 from rich.panel import Panel
 
-from favro_cli.api.client import FavroAPIError, FavroAuthError, FavroClient
+from favro_cli.api.client import FavroAPIError, FavroAuthError
 from favro_cli.api.models import Card
-from favro_cli.config import get_board_id, get_credentials, get_organization_id
-from favro_cli.output.formatters import (
-    output_error,
-    output_json,
-    output_success,
-    output_table,
-)
-from favro_cli.resolvers import (
-    BoardResolver,
-    CardResolver,
-    ColumnResolver,
-    ResolverError,
-    TagResolver,
-    UserResolver,
-)
+from favro_cli.commands.common import get_client
+from favro_cli.config import get_board_id
+from favro_cli.output.formatters import (output_error, output_json,
+                                         output_success, output_table)
+from favro_cli.resolvers import (BoardResolver, CardResolver, ColumnResolver,
+                                 ResolverError, TagResolver, UserResolver)
 from favro_cli.state import state
 
 app = typer.Typer(
@@ -30,22 +21,6 @@ app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]},
 )
 console = Console()
-
-
-def get_client() -> FavroClient:
-    """Get an authenticated client with organization."""
-    creds = get_credentials()
-    if creds is None:
-        output_error("Not logged in. Run 'favro login' first.")
-        raise typer.Exit(1)
-
-    org_id = get_organization_id()
-    if org_id is None:
-        output_error("No organization selected. Run 'favro org select <id>' first.")
-        raise typer.Exit(1)
-
-    email, token = creds
-    return FavroClient(email, token, org_id)
 
 
 @app.command("list")
@@ -211,6 +186,7 @@ def _render_card_detail(
     # Description (right under the name)
     if card.detailed_description:
         lines.append(card.detailed_description)
+        lines.append("")
 
     lines.extend(
         [

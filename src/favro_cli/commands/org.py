@@ -26,18 +26,6 @@ app = typer.Typer(
 )
 
 
-def get_client() -> FavroClient:
-    """Get an authenticated client."""
-    creds = get_credentials()
-    if creds is None:
-        output_error("Not logged in. Run 'favro login' first.")
-        raise typer.Exit(1)
-
-    email, token = creds
-    org_id = get_organization_id()
-    return FavroClient(email, token, org_id)
-
-
 @app.command("list")
 def list_orgs() -> None:
     """List all organizations."""
