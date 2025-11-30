@@ -5,8 +5,6 @@ from typing import Annotated, Optional
 import typer
 from rich.console import Console
 
-from favro_cli.state import state
-
 app = typer.Typer(
     name="favro",
     help="CLI for Favro project management",
@@ -37,17 +35,9 @@ def main(
             is_eager=True,
         ),
     ] = None,
-    json_output: Annotated[
-        bool,
-        typer.Option(
-            "--json",
-            "-j",
-            help="Output in JSON format.",
-        ),
-    ] = False,
 ) -> None:
     """Favro CLI - Manage your Favro boards from the command line."""
-    state["json"] = json_output
+    pass
 
 
 def _register_commands() -> None:

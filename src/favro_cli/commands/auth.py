@@ -7,7 +7,6 @@ from rich.prompt import Prompt
 
 from favro_cli.api.client import FavroAPIError, FavroAuthError, FavroClient
 from favro_cli.config import clear_credentials, get_credentials, get_organization_id, set_credentials, set_organization_id
-from favro_cli.state import state
 from favro_cli.output.formatters import (
     output_error,
     output_info,
@@ -72,7 +71,12 @@ def logout() -> None:
 
 
 @app.command()
-def whoami() -> None:
+def whoami(
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", "-j", help="Output in JSON format"),
+    ] = False,
+) -> None:
     """Show current user information."""
     creds = get_credentials()
     if creds is None:
@@ -88,7 +92,7 @@ def whoami() -> None:
             with FavroClient(email, token) as client:
                 orgs = client.get_organizations()
 
-                if state["json"]:
+                if json_output:
                     output_json({"email": email, "organizations": [o.model_dump(by_alias=True) for o in orgs]})
                 else:
                     output_info(f"[bold]Email:[/bold] {email}")
@@ -112,7 +116,7 @@ def whoami() -> None:
                     output_error(f"Could not find user with email {email} in this organization.")
                     raise typer.Exit(1)
 
-                if state["json"]:
+                if json_output:
                     output_json(current_user)
                 else:
                     output_panel(

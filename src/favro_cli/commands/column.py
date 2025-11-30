@@ -14,7 +14,6 @@ from favro_cli.output.formatters import (
     output_table,
 )
 from favro_cli.resolvers import BoardResolver, ColumnResolver, ResolverError
-from favro_cli.state import state
 
 
 app = typer.Typer(
@@ -29,6 +28,10 @@ def list_columns(
         str | None,
         typer.Option("--board", "-b", help="Board ID or name"),
     ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", "-j", help="Output in JSON format"),
+    ] = False,
 ) -> None:
     """List columns for a board."""
     # Use default board if not specified
@@ -49,7 +52,7 @@ def list_columns(
             # Sort by position
             columns = sorted(columns, key=lambda c: c.position)
 
-            if state["json"]:
+            if json_output:
                 output_json(columns)
             else:
                 output_table(
@@ -87,6 +90,10 @@ def create(
         int | None,
         typer.Option("--position", "-p", help="Column position (0-indexed)"),
     ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", "-j", help="Output in JSON format"),
+    ] = False,
 ) -> None:
     """Create a new column on a board."""
     # Use default board if not specified
@@ -108,7 +115,7 @@ def create(
                 position=position,
             )
 
-            if state["json"]:
+            if json_output:
                 output_json(column)
             else:
                 output_success(f"Created column: {column.name} (position {column.position})")
@@ -137,6 +144,10 @@ def rename(
         str | None,
         typer.Option("--board", "-b", help="Board ID or name (required for name lookup)"),
     ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", "-j", help="Output in JSON format"),
+    ] = False,
 ) -> None:
     """Rename a column."""
     # Use default board if not specified
@@ -159,7 +170,7 @@ def rename(
                 name=name,
             )
 
-            if state["json"]:
+            if json_output:
                 output_json(column)
             else:
                 output_success(f"Renamed column to: {column.name}")
@@ -188,6 +199,10 @@ def move(
         str | None,
         typer.Option("--board", "-b", help="Board ID or name (required for name lookup)"),
     ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", "-j", help="Output in JSON format"),
+    ] = False,
 ) -> None:
     """Move a column to a different position."""
     # Use default board if not specified
@@ -210,7 +225,7 @@ def move(
                 position=position,
             )
 
-            if state["json"]:
+            if json_output:
                 output_json(column)
             else:
                 output_success(f"Moved column '{column.name}' to position {column.position}")

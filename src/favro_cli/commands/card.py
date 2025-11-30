@@ -14,7 +14,6 @@ from favro_cli.output.formatters import (output_error, output_json,
                                          output_success, output_table)
 from favro_cli.resolvers import (BoardResolver, CardResolver, ColumnResolver,
                                  ResolverError, TagResolver, UserResolver)
-from favro_cli.state import state
 
 app = typer.Typer(
     help="Card commands",
@@ -41,6 +40,10 @@ def list_cards(
         str | None,
         typer.Option("--collection", help="Filter by collection ID"),
     ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", "-j", help="Output in JSON format"),
+    ] = False,
 ) -> None:
     """List cards with optional filters."""
     # Use default board if not specified
@@ -75,7 +78,7 @@ def list_cards(
                 collection_id=collection_id,
             )
 
-            if state["json"]:
+            if json_output:
                 output_json(cards)
             else:
                 output_table(
@@ -109,6 +112,10 @@ def show(
         str | None,
         typer.Option("--board", "-b", help="Board ID or name (narrows search scope)"),
     ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", "-j", help="Output in JSON format"),
+    ] = False,
 ) -> None:
     """Show detailed card information."""
     # Use default board if not specified
@@ -126,7 +133,7 @@ def show(
             card_resolver = CardResolver(client)
             card = card_resolver.resolve(card_id, board_id=resolved_board_id)
 
-            if state["json"]:
+            if json_output:
                 output_json(card)
             else:
                 # Build lookup data for display
@@ -265,6 +272,10 @@ def create(
         str | None,
         typer.Option("--description", "-d", help="Card description"),
     ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", "-j", help="Output in JSON format"),
+    ] = False,
 ) -> None:
     """Create a new card."""
     # Use default board if not specified
@@ -293,7 +304,7 @@ def create(
                 detailed_description=description,
             )
 
-            if state["json"]:
+            if json_output:
                 output_json(card)
             else:
                 output_success(f"Created card #{card.sequential_id}: {card.name}")
@@ -326,6 +337,10 @@ def update(
         str | None,
         typer.Option("--board", "-b", help="Board ID or name (narrows search scope)"),
     ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", "-j", help="Output in JSON format"),
+    ] = False,
 ) -> None:
     """Update a card's properties."""
     if name is None and description is None:
@@ -353,7 +368,7 @@ def update(
                 detailed_description=description,
             )
 
-            if state["json"]:
+            if json_output:
                 output_json(card)
             else:
                 output_success(f"Updated card #{card.sequential_id}: {card.name}")
@@ -382,6 +397,10 @@ def move(
         str | None,
         typer.Option("--board", "-b", help="Board ID or name"),
     ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", "-j", help="Output in JSON format"),
+    ] = False,
 ) -> None:
     """Move a card to a different column."""
     # Use default board if not specified
@@ -415,7 +434,7 @@ def move(
                 list_position=0,
             )
 
-            if state["json"]:
+            if json_output:
                 output_json(card)
             else:
                 output_success(
@@ -452,6 +471,10 @@ def assign(
             "--board", "-b", help="Board ID or name (narrows card search scope)"
         ),
     ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", "-j", help="Output in JSON format"),
+    ] = False,
 ) -> None:
     """Assign or unassign users to a card."""
     if user_id is None and remove_user_id is None:
@@ -497,7 +520,7 @@ def assign(
                 remove_assignments=remove_list,
             )
 
-            if state["json"]:
+            if json_output:
                 output_json(card)
             else:
                 if add_user_name:
@@ -539,6 +562,10 @@ def tag(
             "--board", "-b", help="Board ID or name (narrows card search scope)"
         ),
     ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", "-j", help="Output in JSON format"),
+    ] = False,
 ) -> None:
     """Add or remove tags from a card."""
     if add_tag is None and remove_tag is None:
@@ -584,7 +611,7 @@ def tag(
                 remove_tags=remove_list,
             )
 
-            if state["json"]:
+            if json_output:
                 output_json(card)
             else:
                 if add_tag_name:

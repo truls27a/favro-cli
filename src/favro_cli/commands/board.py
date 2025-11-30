@@ -18,7 +18,6 @@ from favro_cli.output.formatters import (
     output_table,
 )
 from favro_cli.resolvers import BoardResolver, ResolverError
-from favro_cli.state import state
 
 
 app = typer.Typer(
@@ -38,6 +37,10 @@ def list_boards(
         bool,
         typer.Option("--archived", "-a", help="Include archived boards"),
     ] = False,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", "-j", help="Output in JSON format"),
+    ] = False,
 ) -> None:
     """List all boards in the organization."""
     try:
@@ -47,7 +50,7 @@ def list_boards(
             # Filter to only show boards (not backlogs)
             boards = [w for w in widgets if w.type == "board"]
 
-            if state["json"]:
+            if json_output:
                 output_json(boards)
             else:
                 output_table(
@@ -74,6 +77,10 @@ def show(
         str | None,
         typer.Argument(help="Board ID or name (uses default if not specified)"),
     ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", "-j", help="Output in JSON format"),
+    ] = False,
 ) -> None:
     """Show board details with columns and card counts."""
     # Use default board if not specified
@@ -90,7 +97,7 @@ def show(
             columns = client.get_columns(widget.widget_common_id)
             columns = sorted(columns, key=lambda c: c.position)
 
-            if state["json"]:
+            if json_output:
                 output_json({
                     "board": widget.model_dump(by_alias=True),
                     "columns": [c.model_dump(by_alias=True) for c in columns],
@@ -145,6 +152,10 @@ def view(
         bool,
         typer.Option("--all", "-a", help="Show all cards (no limit)"),
     ] = False,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", "-j", help="Output in JSON format"),
+    ] = False,
 ) -> None:
     """View board with cards in a Kanban-style layout."""
     # Use default board if not specified
@@ -163,7 +174,7 @@ def view(
             columns = client.get_columns(widget.widget_common_id)
             cards = client.get_cards(widget_common_id=widget.widget_common_id)
 
-            if state["json"]:
+            if json_output:
                 output_json({
                     "board": widget.model_dump(by_alias=True),
                     "columns": [c.model_dump(by_alias=True) for c in columns],
@@ -209,7 +220,12 @@ def select(
 
 
 @app.command()
-def current() -> None:
+def current(
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", "-j", help="Output in JSON format"),
+    ] = False,
+) -> None:
     """Show the currently selected board."""
     board_id = get_board_id()
     if board_id is None:
@@ -221,7 +237,7 @@ def current() -> None:
             resolver = BoardResolver(client)
             board = resolver.resolve(board_id)
 
-            if state["json"]:
+            if json_output:
                 output_json(board)
             else:
                 output_success(f"Current board: {board.name} ({board.widget_common_id})")
