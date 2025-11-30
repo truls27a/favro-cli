@@ -5,24 +5,47 @@ Command line interface for Favro project management.
 ## Installation
 
 ```bash
-uv pip install favro-cli
+pip install git+https://github.com/truls27a/favro-cli.git
 ```
 
 ## Usage
 
 ```bash
-favro --help
+# Authentication
+favro login
+favro logout
+favro whoami
+
+# Organizations
+favro org list
+favro org select <org-id>
+favro org current
+
+# Boards
+favro board list
+favro board show [board-id]
+favro board view [board-id]
+favro board select <board-id>
+favro board current
+
+# Cards
+favro card list --board <board-id>
+favro card show <card-id>
+favro card create "Card name" --board <board-id>
+favro card update <card-id> --name "New name"
+favro card move <card-id> --column <column-id>
+favro card assign <card-id> --add <user>
+favro card tag <card-id> --add <tag>
+favro card delete <card-id>
+
+# Columns
+favro column list --board <board-id>
+favro column create "Column name" --board <board-id>
+favro column rename <column-id> "New name" --board <board-id>
+favro column move <column-id> <position> --board <board-id>
+favro column delete <column-id> --board <board-id>
 ```
 
-## Development
+All commands support `--json` for machine-readable output.
 
-```bash
-# Install dependencies
-uv sync
-
-# Run type checking
-uv run pyright
-
-# Run the CLI
-uv run favro --help
-```
+Credentials are stored in `~/.config/favro-cli/config.toml`.
