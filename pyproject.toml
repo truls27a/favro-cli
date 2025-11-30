@@ -5,14 +5,21 @@ description = "CLI for Favro project management"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "typer>=0.9.0",
-    "httpx>=0.25.0",
-    "rich>=13.0.0",
-    "pydantic>=2.0.0",
+  "typer>=0.9.0",
+  "httpx>=0.25.0",
+  "rich>=13.0.0",
+  "pydantic>=2.0.0",
 ]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.24", "pyright>=1.1.389"]
 
 [project.scripts]
 favro = "favro_cli.cli:app"
+
+[tool.pyright]
+typeCheckingMode = "strict"
+pythonVersion = "3.12"
 
 [build-system]
 requires = ["hatchling"]
@@ -20,13 +27,3 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/favro_cli"]
-
-[tool.pyright]
-typeCheckingMode = "strict"
-pythonVersion = "3.12"
-include = ["src"]
-
-[dependency-groups]
-dev = [
-    "pyright>=1.1.407",
-]
