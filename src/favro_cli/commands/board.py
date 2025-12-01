@@ -150,7 +150,7 @@ def view(
     max_cards: Annotated[
         int,
         typer.Option("--max-cards", "-m", help="Max cards to show per column"),
-    ] = 5,
+    ] = 7,
     show_all: Annotated[
         bool,
         typer.Option("--all", "-a", help="Show all cards (no limit)"),
