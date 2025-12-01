@@ -7,7 +7,7 @@ from rich.console import Console
 from rich.table import Table
 
 from favro_cli.api.client import FavroAPIError, FavroAuthError
-from favro_cli.api.models import Card, Column
+from favro_cli.api.models import Card, Column, Tag
 from favro_cli.commands.common import get_client
 from favro_cli.config import get_board_id, set_board_id
 from favro_cli.output.formatters import (
@@ -18,7 +18,6 @@ from favro_cli.output.formatters import (
     output_table,
 )
 from favro_cli.resolvers import BoardResolver, ResolverError
-
 
 app = typer.Typer(
     help="Board commands",
@@ -87,7 +86,9 @@ def show(
     effective_board_id = board_id or get_board_id()
 
     if not effective_board_id:
-        output_error("No board specified and no default set. Run 'favro board select <id>' first.")
+        output_error(
+            "No board specified and no default set. Run 'favro board select <id>' first."
+        )
         raise typer.Exit(1)
 
     try:
@@ -98,10 +99,12 @@ def show(
             columns = sorted(columns, key=lambda c: c.position)
 
             if json_output:
-                output_json({
-                    "board": widget.model_dump(by_alias=True),
-                    "columns": [c.model_dump(by_alias=True) for c in columns],
-                })
+                output_json(
+                    {
+                        "board": widget.model_dump(by_alias=True),
+                        "columns": [c.model_dump(by_alias=True) for c in columns],
+                    }
+                )
             else:
                 # Show board info
                 output_panel(
@@ -147,7 +150,7 @@ def view(
     max_cards: Annotated[
         int,
         typer.Option("--max-cards", "-m", help="Max cards to show per column"),
-    ] = 10,
+    ] = 5,
     show_all: Annotated[
         bool,
         typer.Option("--all", "-a", help="Show all cards (no limit)"),
@@ -162,7 +165,9 @@ def view(
     effective_board_id = board_id or get_board_id()
 
     if not effective_board_id:
-        output_error("No board specified and no default set. Run 'favro board select <id>' first.")
+        output_error(
+            "No board specified and no default set. Run 'favro board select <id>' first."
+        )
         raise typer.Exit(1)
 
     if show_all:
@@ -173,15 +178,19 @@ def view(
             widget = resolver.resolve(effective_board_id)
             columns = client.get_columns(widget.widget_common_id)
             cards = client.get_cards(widget_common_id=widget.widget_common_id)
+            tags = client.get_tags()
+            tags_map = {t.tag_id: t for t in tags}
 
             if json_output:
-                output_json({
-                    "board": widget.model_dump(by_alias=True),
-                    "columns": [c.model_dump(by_alias=True) for c in columns],
-                    "cards": [c.model_dump(by_alias=True) for c in cards],
-                })
+                output_json(
+                    {
+                        "board": widget.model_dump(by_alias=True),
+                        "columns": [c.model_dump(by_alias=True) for c in columns],
+                        "cards": [c.model_dump(by_alias=True) for c in cards],
+                    }
+                )
             else:
-                _render_board_view(widget.name, columns, cards, max_cards)
+                _render_board_view(widget.name, columns, cards, max_cards, tags_map)
 
     except ResolverError as e:
         output_error(str(e))
@@ -240,7 +249,9 @@ def current(
             if json_output:
                 output_json(board)
             else:
-                output_success(f"Current board: {board.name} ({board.widget_common_id})")
+                output_success(
+                    f"Current board: {board.name} ({board.widget_common_id})"
+                )
     except ResolverError as e:
         output_error(str(e))
         raise typer.Exit(1)
@@ -257,6 +268,7 @@ def _render_board_view(
     columns: list[Column],
     cards: list[Card],
     max_cards: int,
+    tags_map: dict[str, Tag] | None = None,
 ) -> None:
     """Render a Kanban-style board view."""
     # Sort columns by position
@@ -285,10 +297,14 @@ def _render_board_view(
         table.add_column(f"{col.name} ({card_count})", width=200)
 
     # Determine max rows needed
-    max_rows = max(
-        min(len(cards_by_column.get(col.column_id, [])), max_cards)
-        for col in sorted_columns
-    ) if sorted_columns else 0
+    max_rows = (
+        max(
+            min(len(cards_by_column.get(col.column_id, [])), max_cards)
+            for col in sorted_columns
+        )
+        if sorted_columns
+        else 0
+    )
 
     # Add rows
     for row_idx in range(max_rows):
@@ -297,7 +313,7 @@ def _render_board_view(
             col_cards = cards_by_column.get(col.column_id, [])
             if row_idx < len(col_cards):
                 card = col_cards[row_idx]
-                card_text = _format_card_cell(card)
+                card_text = _format_card_cell(card, tags_map)
                 row_cells.append(card_text)
             else:
                 row_cells.append("")
@@ -321,7 +337,7 @@ def _render_board_view(
     console.print(table)
 
 
-def _format_card_cell(card: Card) -> str:
+def _format_card_cell(card: Card, tags_map: dict[str, Tag] | None = None) -> str:
     """Format a card for display in a table cell."""
     lines: list[str] = []
 
@@ -344,5 +360,19 @@ def _format_card_cell(card: Card) -> str:
     # Show task progress if any
     if card.tasks_total > 0:
         lines.append(f"[dim]Tasks: {card.tasks_done}/{card.tasks_total}[/dim]")
+
+    # Show tags if any
+    if card.tags and tags_map:
+        tag_strs: list[str] = []
+        for tid in card.tags:
+            if tid in tags_map:
+                tag = tags_map[tid]
+                if tag.color:
+                    tag_strs.append(f"[{tag.color}]{tag.name}[/{tag.color}]")
+                else:
+                    tag_strs.append(tag.name)
+        if tag_strs:
+            lines.append("")
+            lines.append(", ".join(tag_strs))
 
     return "\n".join(lines)
