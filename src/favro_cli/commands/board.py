@@ -353,10 +353,6 @@ def _format_card_cell(card: Card, tags_map: dict[str, Tag] | None = None) -> str
         due_str = card.due_date.strftime("%Y-%m-%d")
         lines.append(f"[dim]Due: {due_str}[/dim]")
 
-    # Show assignee count if any
-    if card.assignments:
-        lines.append(f"[dim]{len(card.assignments)} assigned[/dim]")
-
     # Show task progress if any
     if card.tasks_total > 0:
         lines.append(f"[dim]Tasks: {card.tasks_done}/{card.tasks_total}[/dim]")
