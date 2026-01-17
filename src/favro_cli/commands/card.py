@@ -272,6 +272,10 @@ def create(
         str | None,
         typer.Option("--description", "-d", help="Card description"),
     ] = None,
+    tags: Annotated[
+        list[str] | None,
+        typer.Option("--tag", "-t", help="Tag ID or name (can be used multiple times)"),
+    ] = None,
     json_output: Annotated[
         bool,
         typer.Option("--json", "-j", help="Output in JSON format"),
@@ -297,11 +301,18 @@ def create(
                 column = column_resolver.resolve(column_id, board_id=resolved_board_id)
                 resolved_column_id = column.column_id
 
+            # Resolve tags if provided
+            resolved_tags: list[str] | None = None
+            if tags:
+                tag_resolver = TagResolver(client)
+                resolved_tags = [tag_resolver.resolve(t).tag_id for t in tags]
+
             card = client.create_card(
                 name=name,
                 widget_common_id=resolved_board_id,
                 column_id=resolved_column_id,
                 detailed_description=description,
+                tags=resolved_tags,
             )
 
             if json_output:
